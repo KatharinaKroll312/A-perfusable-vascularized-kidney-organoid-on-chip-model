@@ -1,0 +1,278 @@
+DVAR $hFile
+DVAR $cCheck
+DVAR $press
+DVAR $length
+DVAR $lame   
+DVAR $COM 
+
+DVAR $COM2
+DVAR $pressurePDMS; Pressure in PSI
+DVAR $linepressure2 ; Pressure in PSI
+DVAR $linepressure3 ; Pressure in PSI
+DVAR $printSpeed ; mm/s
+DVAR $printSpeed2; mms/s
+DVAR $jogSpeed ; mm/s
+DVAR $ccspacing
+DVAR $yprint
+DVAR $height_a
+DVAR $XAero
+DVAR $YAero
+DVAR $slide_L
+DVAR $slide_W
+DVAR $feedrateoverride
+DVAR $MFO_inc
+
+Incremental ; sets relative mode
+Primary ; sets primary units mm and s
+
+FILECLOSE ;
+$COM  = 1  ; serial port for pressure box (PDMS)
+$pressurePDMS = 45; psi to set for the pressure box PDMS
+$printSpeed = 25 ; speed in mm/s for PDMS
+$printSpeed2 = 17 ; speed in mm/s for PDMS
+$jogSpeed = 25 ; speed in mm/s
+
+$MFO_inc = 8
+
+$height_a = (0.00 + 0.350 ) ; AERO + 180 microns 
+
+
+G71; metric units;
+G76; time base seconds;
+G91; incremental mode;
+G68; ??
+G65 F2500; accel speed mm/s^2
+G66 F2500;deccel speed mm/s^2
+
+ENABLE X Y A B C D U ; enables all the axis - we will use B
+
+;==============================
+;TO DO BEFORE THE PRINT SESSION
+;
+;Position nozzle at the lower left edge of the slide
+;
+;Run: POSOFFSET SET X-23.5 Y-29.5
+;==============================
+Call setPress P$COM Q$pressurePDMS
+VELOCITY OFF
+
+$feedrateoverride = 100
+
+$slide_L = 75
+$slide_W = 50
+
+MFO $feedrateoverride
+
+;====================================
+;GO TO SLIDE (1,1)
+;====================================
+
+G90
+G1 B30 F$jogSpeed
+G1 X(0*$slide_L) Y(0*$slide_W)
+
+POSOFFSET SET X0 Y0
+
+Call print_gasket_wallchip_v1
+
+G90
+G1 B30 F$jogSpeed
+
+$feedrateoverride = TASKSTATUS(DATAITEM_MFO)
+;====================================
+;GO TO SLIDE (2,1)
+;====================================
+
+G90
+G1 B30 F$jogSpeed
+G1 X(1*$slide_L) Y(0*$slide_W)
+
+POSOFFSET SET X0 Y0
+
+$feedrateoverride = $feedrateoverride - $MFO_inc
+MFO $feedrateoverride
+
+Call print_gasket_wallchip_v1
+
+G90
+G1 B30 F$jogSpeed
+
+$feedrateoverride = TASKSTATUS(DATAITEM_MFO)
+;====================================
+;GO TO SLIDE(3,1)
+;====================================
+
+G90
+G1 B30 F$jogSpeed
+G1 X(1*$slide_L) Y(0*$slide_W)
+
+POSOFFSET SET X0 Y0
+
+$feedrateoverride = $feedrateoverride - $MFO_inc
+MFO $feedrateoverride
+
+Call print_gasket_wallchip_v1
+
+G90
+G1 B30 F$jogSpeed
+
+$feedrateoverride = TASKSTATUS(DATAITEM_MFO)
+;====================================
+;GO TO SLIDE (1,2)
+;====================================
+
+G90
+G1 B30 F$jogSpeed
+G1 X(-2*$slide_L) Y(-1*$slide_W)
+
+POSOFFSET SET X0 Y0
+
+$feedrateoverride = $feedrateoverride - $MFO_inc
+MFO $feedrateoverride
+
+Call print_gasket_wallchip_v1
+
+G90
+G1 B30 F$jogSpeed
+
+$feedrateoverride = TASKSTATUS(DATAITEM_MFO)
+;====================================
+;GO TO SLIDE (2,2)
+;====================================
+
+G90
+G1 B30 F$jogSpeed
+G1 X(1*$slide_L) Y(0*$slide_W)
+
+POSOFFSET SET X0 Y0
+
+$feedrateoverride = $feedrateoverride - $MFO_inc
+MFO $feedrateoverride
+
+Call print_gasket_wallchip_v1
+
+G90
+G1 B30 F$jogSpeed
+
+$feedrateoverride = TASKSTATUS(DATAITEM_MFO)
+;====================================
+;GO TO SLIDE (3,2)
+;====================================
+
+G90
+G1 B30 F$jogSpeed
+G1 X(1*$slide_L) Y(0*$slide_W)
+
+POSOFFSET SET X0 Y0
+
+$feedrateoverride = $feedrateoverride - $MFO_inc
+MFO $feedrateoverride
+
+Call print_gasket_wallchip_v1
+
+G90
+G1 B30 F$jogSpeed
+
+M2
+
+;----------------------------------------------------------
+
+DFS setPress        
+         
+	$strtask1 = DBLTOSTR( $P, 0 )            
+	$strtask1 = "COM" + $strtask1
+	$hFile = FILEOPEN $strtask1, 2
+	COMMINIT $hFile, "baud=115200 parity=N data=8 stop=1"
+	COMMSETTIMEOUT $hFile, -1, -1, 1000
+                             
+	$press = $Q * 10.0                             
+	$strtask2 = DBLTOSTR( $press , 0 )  
+      
+      
+	$length = STRLEN( $strtask2 )      
+	WHILE $length < 4.0
+		$strtask2 = "0" + $strtask2    
+		$length = STRLEN( $strtask2 ) 
+	ENDWHILE
+
+	$strtask2 = "08PS  " + $strtask2
+                                    
+	$cCheck = 0.00     
+	$lame = STRTOASCII ($strtask2, 0)
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 1) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 2) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 3) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 4)
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 5) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 6) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 7) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 8) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 9)  
+	$cCheck = $cCheck - $lame
+                        
+	WHILE( $cCheck) < 0
+		$cCheck = $cCheck + 256
+	ENDWHILE                        
+
+	$strtask3 = makestring "{#H}" $cCheck   
+	$strtask3 = STRUPR( $strtask3 )
+	$strtask2 = "\x02" + $strtask2 + $strtask3 + "\x03"
+            
+	FILEWRITE $hFile "\x05"
+	FILEWRITE $hFile $strtask2
+	FILEWRITE $hFile "\x04"
+
+	FILECLOSE $hFile
+
+ENDDFS
+
+DFS togglePress        
+         
+	$strtask1 = DBLTOSTR( $P, 0 )            
+	$strtask1 = "COM" + $strtask1
+	$hFile = FILEOPEN $strtask1, 2
+	COMMINIT $hFile, "baud=115200 parity=N data=8 stop=1"
+	COMMSETTIMEOUT $hFile, -1, -1, 1000
+
+	$strtask2 = "04DI  "
+                                    
+	$cCheck = 0.00     
+	$lame = STRTOASCII ($strtask2, 0)
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 1) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 2) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 3) 
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 4)
+	$cCheck = $cCheck - $lame
+	$lame = STRTOASCII( $strtask2, 5) 
+	$cCheck = $cCheck - $lame
+                        
+	WHILE( $cCheck) < 0
+		$cCheck = $cCheck + 256
+	ENDWHILE                        
+
+	$strtask3 = makestring "{#H}" $cCheck   
+	$strtask3 = STRUPR( $strtask3 )
+	$strtask2 = "\x02" + $strtask2 + $strtask3 + "\x03"
+                  
+	FILEWRITE $hFile "\x05"
+	FILEWRITE $hFile $strtask2
+	FILEWRITE $hFile "\x04"
+
+	FILECLOSE $hFile
+
+ENDDFS
+
+#include "print_gasket_wallchip_v1.pgm"
